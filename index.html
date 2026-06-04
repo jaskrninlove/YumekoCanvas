@@ -1195,8 +1195,18 @@ function doSubmit() {
   .then(data => {
     console.log("Submitted:", data);
     showToast("Drawing submitted 🎨");
-    if (tg) setTimeout(() => tg.close(), 2200);
-  })
+
+    if (tg?.sendData) {
+      tg.sendData(JSON.stringify({
+        type: "drawing_submitted",
+        chat_id: CHAT_ID,
+        strokes,
+        colors: colorsUsed.size
+      }));
+    }
+
+  if (tg) setTimeout(() => tg.close(), 2200);
+})
   .catch(err => {
     console.error(err);
     showToast("Submit failed");

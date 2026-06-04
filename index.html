@@ -1184,11 +1184,23 @@ function doSubmit() {
     colors: colorsUsed.size,
   });
 
-  if (tg?.sendData) {
-    tg.sendData(payload);
-  } else {
-    console.log(payload);
-  }
+  fetch("/api/submit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: payload,
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Submitted:", data);
+    showToast("Drawing submitted 🎨");
+    if (tg) setTimeout(() => tg.close(), 2200);
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Submit failed");
+  });
 
   document.getElementById("stat-strokes").textContent = strokes;
   document.getElementById("stat-colors").textContent = colorsUsed.size;

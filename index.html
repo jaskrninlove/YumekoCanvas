@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#f3f4f6"/>
+<title>Yumeko Paint Studio</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --panel-soft: #f8fafc;
+  --border: #d8dee8;
+  --border-dark: #c3cad6;
+  --text: #172033;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --danger: #ef4444;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #eef1f5 100%);
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 10px;
+}
+
+/* Topbar */
+#topbar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#brand {
+  min-width: 0;
+}
+
+#game-label {
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+
+#game-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#word-row {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#word-tiles {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tile {
+  width: 18px;
+  height: 23px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-bottom: 2px solid var(--accent);
+  background: var(--panel-soft);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.tile.space {
+  width: 8px;
+  border: 0;
+  background: transparent;
+}
+
+#word-len {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Timer */
+#timer-wrap {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#timer-svg {
+  transform: rotate(-90deg);
+}
+
+.t-bg {
+  fill: none;
+  stroke: #e5e7eb;
+  stroke-width: 4;
+}
+
+.t-bar {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.2s;
+}
+
+#timer-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Canvas */
+#canvas-shell {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+  min-height: 0;
+}
+
+#main-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #ffffff;
+  border: 1px solid #cfd6e1;
+  border-radius: 12px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+#canvas-actions {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  gap: 7px;
+}
+
+.ca-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: rgba(255,255,255,0.92);
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ca-btn svg {
+  width: 19px;
+  height: 19px;
+}
+
+#stroke-badge {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 9px;
+}
+
+/* Toolbar */
+#toolbar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+#tool-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.tab-btn {
+  min-width: 0;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel-soft);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.tab-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tab-btn .lbl {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  display: none;
+}
+
+.tab-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tab-btn.active .lbl {
+  color: var(--accent);
+}
+
+#shape-tabs {
+  display: none;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.shape-btn {
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+
+.shape-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* popover system */
+.setting-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.setting-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+#palette-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 5px 2px 7px;
+  scrollbar-width: none;
+}
+
+#palette-row::-webkit-scrollbar {
+  display: none;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  cursor: pointer;
+  position: relative;
+}
+
+.swatch.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transform: scale(1.05);
+}
+
+#custom-swatch {
+  background: conic-gradient(red, orange, yellow, green, cyan, blue, purple, red);
+}
+
+#custom-swatch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.range-wrap {
+  display: grid;
+  grid-template-columns: 1fr 46px;
+  align-items: center;
+  gap: 10px;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.value-pill {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 8px;
+  text-align: center;
+}
+
+#submit-btn {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: "Poppins", sans-serif;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  cursor: pointer;
+}
+
+#submit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.overlay.gone {
+  display: none;
+}
+
+.ov-card {
+  width: min(360px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.25);
+  text-align: center;
+  animation: popin 0.25s ease;
+}
+
+@keyframes popin {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.ov-icon {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 12px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ov-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.ov-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.ov-title {
+  margin-top: 4px;
+  font-family: "Poppins", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.ov-sub {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rule-list {
+  margin: 18px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.rule-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.rule-row svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.ov-btn {
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: "Poppins", sans-serif;
+}
+
+.success-icon {
+  font-size: 54px;
+  margin-bottom: 10px;
+}
+
+.success-stat {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.success-stat b {
+  color: var(--accent);
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%) translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+  background: #111827;
+  color: white;
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 400;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Mobile fit fix */
+@media (max-width: 700px) {
+  #app {
+    padding: 7px;
+    gap: 7px;
+    grid-template-rows: auto minmax(200px, 1fr) auto;
+  }
+
+  #topbar {
+    min-height: 64px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    align-items: center;
+  }
+
+  #game-label {
+    font-size: 13px;
+  }
+
+  #game-sub {
+    font-size: 10px;
+  }
+
+  #timer-wrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  #timer-svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  #canvas-shell {
+    min-height: 200px;
+    padding: 7px;
+    border-radius: 14px;
+  }
+
+  #main-canvas {
+    border-radius: 10px;
+  }
+
+  #toolbar {
+    padding: 7px;
+    gap: 7px;
+    border-radius: 14px;
+  }
+
+  #tool-tabs {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 7px;
+  }
+
+  .tab-btn {
+    width: 100%;
+    height: 52px;
+    border-radius: 15px;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tab-btn .lbl {
+    display: none;
+  }
+
+  .tab-btn svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  #shape-tabs {
+    display: none;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+  }
+
+  .shape-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shape-btn svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .setting-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  #palette-row {
+    padding: 2px 0;
+    gap: 7px;
+  }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  .range-wrap {
+    grid-template-columns: 1fr 46px;
+  }
+
+  #submit-btn {
+    height: 42px;
+  }
+
+  .ov-card {
+    border-radius: 20px;
+    padding: 22px 16px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+<div class="overlay" id="word-overlay">
+  <div class="ov-card">
+    <div class="ov-icon"><i data-lucide="palette"></i></div>
+    <div class="ov-eyebrow">Yumeko Paint</div>
+    <div class="ov-title">Ready to draw?</div>
+    <div class="ov-sub">Open your canvas, draw the secret word, then submit it to the table.</div>
+
+    <div class="rule-list">
+      <div class="rule-row"><i data-lucide="brush"></i><span>Use pen, marker, fill, shapes, and eraser.</span></div>
+      <div class="rule-row"><i data-lucide="ban"></i><span>No letters, numbers, or direct symbols.</span></div>
+      <div class="rule-row"><i data-lucide="timer"></i><span>You have <b id="rule-time">120</b> seconds.</span></div>
+      <div class="rule-row"><i data-lucide="sparkles"></i><span>Cleaner art gives better guesses.</span></div>
+    </div>
+
+    <button class="ov-btn" id="start-btn">Open Canvas</button>
+  </div>
+</div>
+
+<div class="overlay gone" id="success-overlay">
+  <div class="ov-card">
+    <div class="success-icon">🎨</div>
+    <div class="ov-eyebrow">Submitted</div>
+    <div class="ov-title">Drawing delivered!</div>
+    <div class="ov-sub">Yumeko has sent your masterpiece to the game.</div>
+    <div class="success-stat">Strokes: <b id="stat-strokes">0</b> · Colors: <b id="stat-colors">0</b></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div id="brand">
+      <div id="game-label">Yumeko Paint Studio</div>
+      <div id="game-sub">Simple, clean, Microsoft Paint style canvas.</div>
+    </div>
+
+    <div id="timer-wrap">
+      <svg id="timer-svg" viewBox="0 0 48 48" width="50" height="50">
+        <circle class="t-bg" cx="24" cy="24" r="21"></circle>
+        <circle class="t-bar" id="t-arc" cx="24" cy="24" r="21"></circle>
+      </svg>
+      <div id="timer-num">–</div>
+    </div>
+  </div>
+
+  <div id="canvas-shell">
+    <canvas id="main-canvas"></canvas>
+
+    <div id="canvas-actions">
+      <button class="ca-btn" id="undo-btn" title="Undo"><i data-lucide="undo-2"></i></button>
+      <button class="ca-btn" id="redo-btn" title="Redo"><i data-lucide="redo-2"></i></button>
+      <button class="ca-btn" id="clear-btn" title="Clear"><i data-lucide="trash-2"></i></button>
+    </div>
+
+    <div id="stroke-badge">0 strokes</div>
+  </div>
+
+  <div id="toolbar">
+    <div id="tool-tabs">
+      <button class="tab-btn active" id="tab-pen"><i data-lucide="pen-line"></i><span class="lbl">PEN</span></button>
+      <button class="tab-btn" id="tab-marker"><i data-lucide="highlighter"></i><span class="lbl">MARKER</span></button>
+      <button class="tab-btn" id="tab-fill"><i data-lucide="paint-bucket"></i><span class="lbl">FILL</span></button>
+      <button class="tab-btn" id="tab-shape"><i data-lucide="shapes"></i><span class="lbl">SHAPE</span></button>
+      <button class="tab-btn" id="tab-eraser"><i data-lucide="eraser"></i><span class="lbl">ERASE</span></button>
+      <button class="tab-btn" id="tab-color"><i data-lucide="palette"></i><span class="lbl">COLOR</span></button>
+    </div>
+
+    <div id="shape-tabs">
+      <button class="shape-btn active" data-shape="rect"><i data-lucide="square"></i></button>
+      <button class="shape-btn" data-shape="circle"><i data-lucide="circle"></i></button>
+      <button class="shape-btn" data-shape="triangle"><i data-lucide="triangle"></i></button>
+      <button class="shape-btn" data-shape="line"><i data-lucide="minus"></i></button>
+      <button class="shape-btn" data-shape="arrow"><i data-lucide="arrow-right"></i></button>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Colors</div>
+      <div id="palette-row"></div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Brush Size</div>
+      <div class="range-wrap">
+        <input type="range" id="size-slider" min="1" max="60" value="7"/>
+        <span class="value-pill" id="size-val">7px</span>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Opacity</div>
+      <div class="range-wrap">
+        <input type="range" id="opacity-slider" min="10" max="100" value="100"/>
+        <span class="value-pill" id="opacity-val">100%</span>
+      </div>
+    </div>
+
+    <button id="submit-btn" disabled>Submit Drawing</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setBackgroundColor?.("#f3f4f6");
+  tg.setHeaderColor?.("#f3f4f6");
+}
+
+const P = new URLSearchParams(location.search);
+const WORD = (P.get("word") || "yumeko").toLowerCase();
+const CHAT_ID = P.get("chat") || "0";
+const SECONDS = parseInt(P.get("time") || "120");
+
+const canvas = document.getElementById("main-canvas");
+const ctx = canvas.getContext("2d");
+
+const wordTiles = document.getElementById("word-tiles");
+const wordLen = document.getElementById("word-len");
+const timerArc = document.getElementById("t-arc");
+const timerNum = document.getElementById("timer-num");
+const submitBtn = document.getElementById("submit-btn");
+const strokeBadge = document.getElementById("stroke-badge");
+const toast = document.getElementById("toast");
+
+let currentTool = "pen";
+let currentShape = "rect";
+let currentColor = "#111827";
+let brushSize = 7;
+let opacity = 1;
+let isDrawing = false;
+let hasDrawn = false;
+let submitted = false;
+let strokes = 0;
+let colorsUsed = new Set(["#111827"]);
+let timerInterval = null;
+let timeLeft = SECONDS;
+
+let undoStack = [];
+let redoStack = [];
+
+let shapeStart = null;
+let shapeSnap = null;
+
+const PALETTE = [
+  "#111827","#ffffff","#ef4444","#f97316","#f59e0b",
+  "#22c55e","#06b6d4","#3b82f6","#6366f1","#a855f7",
+  "#ec4899","#64748b","#000000"
+];
+
+lucide.createIcons();
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+function buildPalette() {
+  const row = document.getElementById("palette-row");
+  row.innerHTML = "";
+
+  PALETTE.forEach((c) => {
+    const sw = document.createElement("div");
+    sw.className = "swatch" + (c === currentColor ? " active" : "");
+    sw.style.background = c;
+    sw.addEventListener("click", () => setColor(c));
+    row.appendChild(sw);
+  });
+
+  const custom = document.createElement("div");
+  custom.id = "custom-swatch";
+  custom.className = "swatch";
+  const inp = document.createElement("input");
+  inp.type = "color";
+  inp.value = "#2563eb";
+  inp.addEventListener("input", () => setColor(inp.value));
+  custom.appendChild(inp);
+  row.appendChild(custom);
+}
+
+function setColor(c) {
+  currentColor = c;
+  colorsUsed.add(c);
+  if (currentTool === "eraser") setTool("pen");
+
+  document.querySelectorAll(".swatch").forEach((sw) => {
+    sw.classList.remove("active");
+  });
+}
+
+function buildTiles() {
+  wordTiles.innerHTML = "";
+  for (const ch of WORD) {
+    const t = document.createElement("span");
+    if (ch === " ") {
+      t.className = "tile space";
+    } else {
+      t.className = "tile";
+    }
+    wordTiles.appendChild(t);
+  }
+  wordLen.textContent = `(${WORD.replace(/ /g, "").length} letters)`;
+}
+
+function revealTile(idx) {
+  const tiles = [...wordTiles.querySelectorAll(".tile:not(.space)")];
+  const letters = WORD.replace(/ /g, "").toUpperCase().split("");
+  if (tiles[idx]) tiles[idx].textContent = letters[idx];
+}
+
+function resizeCanvas() {
+  const shell = document.getElementById("canvas-shell");
+  const old = canvas.toDataURL("image/png");
+
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = shell.clientWidth * ratio - 20 * ratio;
+  canvas.height = shell.clientHeight * ratio - 20 * ratio;
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+  const rect = canvas.getBoundingClientRect();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  const img = new Image();
+  img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+  img.src = old;
+}
+
+function saveUndo() {
+  undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  if (undoStack.length > 40) undoStack.shift();
+  redoStack = [];
+}
+
+function getXY(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top,
+  };
+}
+
+function applyCtxStyle(isErase = false) {
+  ctx.globalAlpha = isErase ? 1 : opacity;
+  ctx.globalCompositeOperation = isErase ? "destination-out" : "source-over";
+  ctx.strokeStyle = currentColor;
+  ctx.fillStyle = currentColor;
+  ctx.lineWidth = currentTool === "marker" ? brushSize * 2 : brushSize;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+}
+
+function floodFill() {
+  const rect = canvas.getBoundingClientRect();
+  ctx.globalAlpha = opacity;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = currentColor;
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.globalAlpha = 1;
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  if (submitted) return;
+  e.preventDefault();
+
+  const p = getXY(e);
+
+  if (currentTool === "fill") {
+    saveUndo();
+    floodFill();
+    finishStroke();
+    return;
+  }
+
+  if (currentTool === "shape") {
+    shapeStart = p;
+    shapeSnap = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    isDrawing = true;
+    return;
+  }
+
+  saveUndo();
+  isDrawing = true;
+  applyCtxStyle(currentTool === "eraser");
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+});
+
+canvas.addEventListener("pointermove", (e) => {
+  if (!isDrawing || submitted) return;
+  e.preventDefault();
+
+  const p = getXY(e);
+
+  if (currentTool === "shape" && shapeStart && shapeSnap) {
+    ctx.putImageData(shapeSnap, 0, 0);
+    drawShape(shapeStart, p);
+    return;
+  }
+
+  applyCtxStyle(currentTool === "eraser");
+  if (currentTool === "marker") ctx.globalAlpha = opacity * 0.45;
+
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+});
+
+canvas.addEventListener("pointerup", (e) => {
+  if (!isDrawing) return;
+
+  if (currentTool === "shape" && shapeStart && shapeSnap) {
+    const p = getXY(e);
+    saveUndo();
+    ctx.putImageData(shapeSnap, 0, 0);
+    drawShape(shapeStart, p);
+    shapeStart = null;
+    shapeSnap = null;
+  }
+
+  isDrawing = false;
+  finishStroke();
+});
+
+canvas.addEventListener("pointerleave", () => {
+  if (isDrawing && currentTool !== "shape") {
+    isDrawing = false;
+    finishStroke();
+  }
+});
+
+function finishStroke() {
+  hasDrawn = true;
+  submitBtn.disabled = false;
+  strokes++;
+  strokeBadge.textContent = `${strokes} ${strokes === 1 ? "stroke" : "strokes"}`;
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function drawShape(a, b) {
+  applyCtxStyle(false);
+  const w = b.x - a.x;
+  const h = b.y - a.y;
+  ctx.beginPath();
+
+  if (currentShape === "rect") {
+    ctx.strokeRect(a.x, a.y, w, h);
+  } else if (currentShape === "circle") {
+    ctx.ellipse(a.x + w / 2, a.y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (currentShape === "triangle") {
+    ctx.moveTo(a.x + w / 2, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(a.x, b.y);
+    ctx.closePath();
+    ctx.stroke();
+  } else if (currentShape === "line") {
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  } else if (currentShape === "arrow") {
+    drawArrow(a.x, a.y, b.x, b.y);
+  }
+}
+
+function drawArrow(x1, y1, x2, y2) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const head = Math.max(14, brushSize * 2.5);
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(angle - 0.45), y2 - head * Math.sin(angle - 0.45));
+  ctx.lineTo(x2 - head * Math.cos(angle + 0.45), y2 - head * Math.sin(angle + 0.45));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+
+  const map = {
+    pen: "tab-pen",
+    marker: "tab-marker",
+    fill: "tab-fill",
+    shape: "tab-shape",
+    eraser: "tab-eraser",
+  };
+
+  if (map[tool]) document.getElementById(map[tool]).classList.add("active");
+  document.getElementById("shape-tabs").style.display = tool === "shape" ? "grid" : "none";
+}
+
+document.getElementById("tab-pen").onclick = () => setTool("pen");
+document.getElementById("tab-marker").onclick = () => setTool("marker");
+document.getElementById("tab-fill").onclick = () => setTool("fill");
+document.getElementById("tab-shape").onclick = () => setTool("shape");
+document.getElementById("tab-eraser").onclick = () => setTool("eraser");
+document.getElementById("tab-color").onclick = () => showToast("Pick a color below 🎨");
+
+document.querySelectorAll("[data-shape]").forEach((btn) => {
+  btn.onclick = () => {
+    currentShape = btn.dataset.shape;
+    document.querySelectorAll("[data-shape]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+  };
+});
+
+document.getElementById("size-slider").oninput = (e) => {
+  brushSize = parseInt(e.target.value);
+  document.getElementById("size-val").textContent = `${brushSize}px`;
+};
+
+document.getElementById("opacity-slider").oninput = (e) => {
+  opacity = parseInt(e.target.value) / 100;
+  document.getElementById("opacity-val").textContent = `${e.target.value}%`;
+};
+
+document.getElementById("undo-btn").onclick = () => {
+  if (!undoStack.length) return;
+  redoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  ctx.putImageData(undoStack.pop(), 0, 0);
+};
+
+document.getElementById("redo-btn").onclick = () => {
+  if (!redoStack.length) return;
+  undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  ctx.putImageData(redoStack.pop(), 0, 0);
+};
+
+document.getElementById("clear-btn").onclick = () => {
+  saveUndo();
+  const rect = canvas.getBoundingClientRect();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  strokes = 0;
+  strokeBadge.textContent = "0 strokes";
+  hasDrawn = false;
+  submitBtn.disabled = true;
+};
+
+const CIRC = 2 * Math.PI * 21;
+timerArc.style.strokeDasharray = CIRC;
+
+function startTimer() {
+  timeLeft = SECONDS;
+  timerNum.textContent = timeLeft;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerNum.textContent = timeLeft;
+
+    const pct = timeLeft / SECONDS;
+    timerArc.style.strokeDashoffset = CIRC * (1 - pct);
+
+    if (timeLeft <= 10) {
+      timerArc.style.stroke = "#ef4444";
+    } else if (timeLeft <= 30) {
+      timerArc.style.stroke = "#f59e0b";
+    }
+
+    if (timeLeft === 60) revealTile(0);
+    if (timeLeft === 30) revealTile(Math.floor(WORD.replace(/ /g, "").length / 2));
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (hasDrawn) doSubmit();
+      else showToast("Time's up!");
+    }
+  }, 1000);
+}
+
+submitBtn.onclick = doSubmit;
+
+function doSubmit() {
+  if (submitted || !hasDrawn) return;
+  submitted = true;
+  clearInterval(timerInterval);
+  submitBtn.disabled = true;
+
+  const off = document.createElement("canvas");
+  off.width = canvas.width;
+  off.height = canvas.height;
+  const offCtx = off.getContext("2d");
+  offCtx.fillStyle = "#ffffff";
+  offCtx.fillRect(0, 0, off.width, off.height);
+  offCtx.drawImage(canvas, 0, 0);
+
+  const payload = JSON.stringify({
+    image: off.toDataURL("image/jpeg", 0.9),
+    word: WORD,
+    chat_id: CHAT_ID,
+    strokes,
+    colors: colorsUsed.size,
+  });
+
+  if (tg?.sendData) {
+    tg.sendData(payload);
+  } else {
+    console.log(payload);
+  }
+
+  document.getElementById("stat-strokes").textContent = strokes;
+  document.getElementById("stat-colors").textContent = colorsUsed.size;
+  document.getElementById("success-overlay").classList.remove("gone");
+
+  if (tg) setTimeout(() => tg.close(), 2200);
+}
+
+document.getElementById("start-btn").onclick = () => {
+  document.getElementById("word-overlay").classList.add("gone");
+  resizeCanvas();
+  startTimer();
+};
+
+function init() {
+  document.getElementById("rule-time").textContent = SECONDS;
+  buildPalette();
+  buildTiles();
+  resizeCanvas();
+
+  const ro = new ResizeObserver(() => resizeCanvas());
+  ro.observe(document.getElementById("canvas-shell"));
+}
+
+init();
+</script>
+</body>
+</html>

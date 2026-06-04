@@ -1,0 +1,23 @@
+{
+  "name": "yumeko-sketch-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram Mini App canvas for Yumeko Sketch Royale.",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve .",
+    "build": "echo Static site - no build needed"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "canvas",
+    "drawing",
+    "yumeko"
+  ],
+  "author": "Jass",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
